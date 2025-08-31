@@ -50,22 +50,27 @@ async function main() {
             if (!market.tokens || market.tokens.length < 2) continue;
             const yesToken = market.tokens[0].token_id;
             const noToken = market.tokens[1].token_id;
+            if (!yesToken || !noToken) continue;
             const conditionId = market.condition_id;
 
-            const yesBalResp = await clobClient.getBalanceAllowance({
+            const yesBalResp: any = await clobClient.getBalanceAllowance({
                 asset_type: AssetType.CONDITIONAL,
                 token_id: yesToken,
             });
-            const noBalResp = await clobClient.getBalanceAllowance({
+            const noBalResp: any = await clobClient.getBalanceAllowance({
                 asset_type: AssetType.CONDITIONAL,
                 token_id: noToken,
             });
+            if (yesBalResp.error || noBalResp.error) continue;
+            if (!yesBalResp.balance || !noBalResp.balance) continue;
             const yesBal = BigNumber.from(yesBalResp.balance);
             const noBal = BigNumber.from(noBalResp.balance);
             if (yesBal.gt(0) && noBal.gt(0)) {
                 const amount = yesBal.lt(noBal) ? yesBal : noBal;
                 console.log(
-                    `Merging ${ethers.utils.formatUnits(amount, 6)} shares for market ${market.question || market.condition_id}`,
+                    `Merging ${ethers.utils.formatUnits(amount, 6)} shares for market ${
+                        market.question || market.condition_id
+                    }`,
                 );
                 const tx = await ctf.mergePositions(
                     contractConfig.collateral,
